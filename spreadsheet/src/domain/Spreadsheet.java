@@ -11,7 +11,6 @@ public class Spreadsheet {
     private final int rows;
     private final int cols;
 
-    // Tokenizer: Zellref, Bereichs-Doppelpunkt, Zahl, Operator, Klammer, Komma
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
             "([A-Z]+[0-9]+)|(:)|([0-9]+)|([+\\-*/^])|([()])|(,)"
     );
@@ -28,8 +27,6 @@ public class Spreadsheet {
                 cells[r][c] = new Cell();
     }
 
-    // ---------------------------
-    // Public API
 
     public String get(String cellName) {
         int[] rc = parseAddress(cellName);
@@ -86,8 +83,6 @@ public class Spreadsheet {
         }
     }
 
-    // ---------------------------
-    // Internals
 
     private String get(int row, int col) {
         return cells[row][col].getValue();
@@ -104,7 +99,6 @@ public class Spreadsheet {
         }
     }
 
-    // A1-Adressparser → [rowIndex, colIndex]
     private int[] parseAddress(String cellName) {
         if (cellName == null) throw new IllegalArgumentException("null address");
         String s = cellName.trim().toUpperCase();
@@ -131,7 +125,6 @@ public class Spreadsheet {
         return ch - 'A';
     }
 
-    // Bereichsparser "A1:B3" → [r1,c1,r2,c2] (geordnet)
     private int[] parseRange(String range) {
         String s = range.trim().toUpperCase();
         Matcher m = Pattern.compile("^([A-Z]+[0-9]+):([A-Z]+[0-9]+)$").matcher(s);
@@ -143,13 +136,10 @@ public class Spreadsheet {
         return new int[]{r1, c1, r2, c2};
     }
 
-    // CSV splitter (einfach, ohne Quotes)
     private String[] splitCsv(String line, char sep) {
         return line.split(Pattern.quote(String.valueOf(sep)), -1);
     }
 
-    // ---------------------------
-    // Evaluation
 
     private void evaluateCell(int row, int col) throws NumberFormatException {
         String f = cells[row][col].getFormula().trim();
@@ -188,7 +178,6 @@ public class Spreadsheet {
         return f.substring(start, f.length() - 1).trim();
     }
 
-    // ---- Bereichs-Funktionen (ein Argument: Range)
     private long sum(String arg) {
         long s = 0;
         for (long v : valuesOf(arg)) s += v;
@@ -219,7 +208,6 @@ public class Spreadsheet {
     }
 
     private Iterable<Long> valuesOf(String rangeOrList) {
-        // Erlaubt aktuell nur EINEN Range wie "A1:B3"
         int[] r = parseRange(rangeOrList);
         List<Long> vals = new ArrayList<>();
         for (int rr = r[0]; rr <= r[2]; rr++) {
@@ -232,7 +220,6 @@ public class Spreadsheet {
         return vals;
     }
 
-    // ---- Ausdrucksauswertung (Shunting-Yard → RPN → Eval)
     private String evalExpression(String expr) {
         List<String> rpn = toRPN(expr);
         long val = evalRPN(rpn);
@@ -248,26 +235,25 @@ public class Spreadsheet {
 
         while (m.find()) {
             String t;
-            if ((t = m.group(1)) != null) {               // Zellreferenz
+            if ((t = m.group(1)) != null) {               
                 output.add(resolveRef(t));
-            } else if ((t = m.group(3)) != null) {        // Zahl
+            } else if ((t = m.group(3)) != null) {        
                 output.add(t);
-            } else if ((t = m.group(4)) != null) {        // Operator
+            } else if ((t = m.group(4)) != null) {       
                 while (!ops.isEmpty() && isOperator(ops.peek()) &&
                         (precedence(ops.peek()) > precedence(t) ||
                          (precedence(ops.peek()) == precedence(t) && isLeftAssoc(t)))) {
                     output.add(ops.pop());
                 }
                 ops.push(t);
-            } else if ((t = m.group(5)) != null) {        // Klammer
+            } else if ((t = m.group(5)) != null) {       
                 if (t.equals("(")) ops.push(t);
                 else {
                     while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
                     if (ops.isEmpty() || !ops.peek().equals("(")) throw new IllegalArgumentException("Mismatched parens");
-                    ops.pop(); // '('
+                    ops.pop();
                 }
             } else if (m.group(2) != null || m.group(6) != null) {
-                // ':' und ',' sind in reinen Ausdrücken nicht erlaubt
                 throw new IllegalArgumentException("Unexpected token: ':' or ',' in expression");
             }
         }
@@ -322,10 +308,8 @@ public class Spreadsheet {
         int[] rc = parseAddress(ref);
         String v = cells[rc[0]][rc[1]].getValue().trim();
         if (v.isEmpty()) return "0";
-        // Falls in der referenzierten Zelle ein Fehlertext steht, brich ab:
         if (v.startsWith("#")) throw new IllegalArgumentException("Ref error: " + ref);
-        // Nur Ganzzahlen erlaubt (MVP)
-        parseLongStrict(v); // Validierung
+        parseLongStrict(v);
         return v;
     }
 
