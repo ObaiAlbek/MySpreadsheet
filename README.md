@@ -29,8 +29,3 @@ Formeln unterstützen sowohl Grundrechenarten als auch einfache Funktionen (SUMM
   - Maximal 99 Zeilen (1–99).
   - Maximal 26 Spalten (A–Z).
 
----
-
-## Projektstruktur
-
-
