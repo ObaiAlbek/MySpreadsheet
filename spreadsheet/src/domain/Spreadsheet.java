@@ -16,9 +16,7 @@ public class Spreadsheet {
     );
 
     public Spreadsheet(int rows, int cols) {
-        if (rows < 1 || rows > 99) throw new IllegalArgumentException("rows must be 1..99");
-        if (cols < 1 || cols > 26) throw new IllegalArgumentException("cols must be 1..26 (A..Z)");
-        this.rows = rows;
+            this.rows = rows;
         this.cols = cols;
 
         cells = new Cell[rows][cols];
@@ -141,9 +139,9 @@ public class Spreadsheet {
     }
 
 
-    private void evaluateCell(int row, int col) throws NumberFormatException {
+    private void evaluateCell(int row, int col) {
         String f = cells[row][col].getFormula().trim();
-        String result = "";
+        String result;
 
         try {
             if (f.toUpperCase().startsWith("SUMME(")) {
@@ -272,14 +270,14 @@ public class Spreadsheet {
                 if (st.size() < 2) throw new IllegalArgumentException("Malformed expression");
                 long b = st.pop(), a = st.pop();
                 switch (t) {
-                    case "+": st.push(a + b); break;
-                    case "-": st.push(a - b); break;
-                    case "*": st.push(a * b); break;
-                    case "/":
+                    case "+" -> st.push(a + b);
+                    case "-" -> st.push(a - b);
+                    case "*" -> st.push(a * b);
+                    case "/" -> {
                         if (b == 0) throw new ArithmeticException("/0");
-                        st.push(a / b); break;
-                    case "^":
-                        st.push((long)Math.pow(a, b)); break;
+                        st.push(a / b);
+                    }
+                    case "^" -> st.push((long)Math.pow(a, b));
                 }
             } else {
                 st.push(parseLongStrict(t));
@@ -293,15 +291,15 @@ public class Spreadsheet {
         return "+-*/^".contains(s);
     }
     private int precedence(String op) {
-        switch (op) {
-            case "^": return 3;
-            case "*": case "/": return 2;
-            case "+": case "-": return 1;
-            default: return 0;
-        }
+        return switch (op) {
+            case "^" -> 3;
+            case "*", "/" -> 2;
+            case "+", "-" -> 1;
+            default -> 0;
+        };
     }
     private boolean isLeftAssoc(String op) {
-        return !op.equals("^"); // Potenz ist rechtsassoziativ
+        return !op.equals("^");
     }
 
     private String resolveRef(String ref) {
@@ -317,8 +315,6 @@ public class Spreadsheet {
         if (!s.matches("[-]?[0-9]+")) throw new NumberFormatException("Not an integer: " + s);
         return Long.parseLong(s);
     }
-
-    // ---------------------------
 
     @Override
     public String toString() {
